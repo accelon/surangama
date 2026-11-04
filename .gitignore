@@ -1,0 +1,18 @@
+# 原始素材與本機檔案：不進版控
+vendor/
+.local/
+node_modules/
+
+# 建置產物（單檔部署版與中間檔）
+surangama*.html
+surangama.html.gz
+build/_*
+build/series/_*
+screenshots/
+
+# Python／暫存
+__pycache__/
+build/__pycache__/
+*.log
+*.tmp
+Thumbs.db
