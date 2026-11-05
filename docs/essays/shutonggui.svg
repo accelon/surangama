@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 340" role="img" aria-label="九家科判各自以不同名稱指向同一條經文軌道上的同一個號">
+  <rect width="760" height="340" fill="#F6EFDA"/>
+  <style>
+    text { font-family: 'Noto Serif TC','Songti TC',serif; fill: #2C2822; }
+    .k { font-family: 'Noto Sans TC',sans-serif; font-size: 11px; letter-spacing: .12em; fill: #8A7A62; }
+    .box { fill: #FFFDF5; stroke: #C9B99A; stroke-width: 1; }
+    .name { font-size: 13px; }
+    .ord { font-family: 'Noto Sans TC',sans-serif; font-size: 12px; fill: #A6332B; letter-spacing: .08em; }
+    .track { stroke: #2C2822; stroke-width: 2; }
+    .tick { stroke: #A6332B; stroke-width: 3; }
+    .line { stroke: #B9A582; stroke-width: 1; fill: none; }
+    .sutra { font-size: 15px; }
+    .note { font-size: 11px; fill: #8A7A62; font-family: 'Noto Sans TC',sans-serif; letter-spacing: .06em; }
+  </style>
+
+  <text class="k" x="24" y="28">各家科判（例示四家）</text>
+  <text class="k" x="318" y="28">同一條軌</text>
+  <text class="k" x="456" y="28">經文</text>
+
+  <!-- 左：三家科判，各自的名稱 -->
+  <g>
+    <rect class="box" x="24" y="52" width="180" height="46" rx="4"/>
+    <text class="name" x="40" y="72">子璿</text>
+    <text class="ord" x="40" y="89">丙二 引眾同聞</text>
+
+    <rect class="box" x="24" y="118" width="180" height="46" rx="4"/>
+    <text class="name" x="40" y="138">交光</text>
+    <text class="ord" x="40" y="155">丁二 如來答定</text>
+
+    <rect class="box" x="24" y="184" width="180" height="46" rx="4"/>
+    <text class="name" x="40" y="204">宣化</text>
+    <text class="ord" x="40" y="221">A1 序分</text>
+
+    <rect class="box" x="24" y="250" width="180" height="46" rx="4"/>
+    <text class="name" x="40" y="270">圓瑛</text>
+    <text class="ord" x="40" y="287">乙初 序分</text>
+  </g>
+
+  <!-- 中：軌道與號 -->
+  <line class="track" x1="330" y1="52" x2="330" y2="318"/>
+  <line class="tick" x1="330" y1="152" x2="356" y2="152"/>
+  <circle cx="330" cy="152" r="5" fill="#A6332B"/>
+  <text class="ord" x="362" y="148">S0042</text>
+  <text class="note" x="362" y="164">不可變、不重用</text>
+
+  <!-- 連接線：不同名稱 → 同一個號 -->
+  <path class="line" d="M204 75 C 280 75, 300 140, 326 150"/>
+  <path class="line" d="M204 141 C 270 141, 300 148, 326 151"/>
+  <path class="line" d="M204 207 C 280 207, 300 160, 326 153"/>
+  <path class="line" d="M204 273 C 280 273, 300 168, 326 155"/>
+
+  <!-- 右：經文原句 -->
+  <rect class="box" x="428" y="120" width="308" height="64" rx="4"/>
+  <text class="sutra" x="444" y="148">如是我聞，一時佛在室羅筏城，</text>
+  <text class="sutra" x="444" y="170">祇桓精舍。</text>
+  <path class="line" d="M356 152 L 424 152"/>
+
+  <text class="note" x="24" y="322">同一個位置，四種叫法；軌號只認位置，不認叫法。注疏、科判、譯本都掛在同一個號上。</text>
+</svg>

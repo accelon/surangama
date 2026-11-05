@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>楞嚴經選注</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>楞嚴經選注</h1>
+  <label class="sel">卷
+    <select id="juan"></select>
+  </label>
+  <input id="q" type="search" placeholder="搜尋經文…">
+  <span id="hint" class="hint"></span>
+</header>
+<main>
+  <section id="textPane" aria-label="經文"></section>
+  <aside id="side">
+    <nav class="tabs">
+      <button data-tab="notes" class="on">注疏</button>
+      <button data-tab="ke">科判</button>
+      <button data-tab="alt">別譯</button>
+      <button data-tab="dict">辭典</button>
+      <button data-tab="full">全文</button>
+    </nav>
+    <div id="notesPane" class="pane"></div>
+    <div id="kePane" class="pane" hidden>
+      <select id="keSel" class="keSel"></select>
+      <div id="keBody" class="keBody"></div>
+    </div>
+    <div id="altPane" class="pane" hidden>
+      <div class="altHead" id="altHead"></div>
+      <div id="altBody" class="altBody"></div>
+    </div>
+    <div id="fullPane" class="pane" hidden>
+      <select id="fullSel" class="keSel"></select>
+      <div id="fullBody" class="fullBody"></div>
+    </div>
+    <div id="dictPane" class="pane" hidden>
+      <div class="dictBar">
+        <input id="dq" type="search" placeholder="搜尋詞條（中英梵藏）…">
+        <div id="chips" class="chips"></div>
+      </div>
+      <div id="dictList" class="dictList"></div>
+      <div id="dictDetail" class="dictDetail"></div>
+    </div>
+  </aside>
+</main>
+<script src="site/data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

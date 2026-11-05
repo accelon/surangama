@@ -1,7 +1,7 @@
-# AGENTS.md — `surangama` 工作區（楞嚴經合注）
+# AGENTS.md — `surangama` 工作區（楞嚴經選注）
 
 > 2026-11-04 作者指示：開新工作區 `D:\2026\surangama`，版控家 <https://github.com/accelon/surangama>。
-> 這一區做《楞嚴經合注》，成品形態與 `vcpp`（金剛經合注）同一類。
+> 這一區做《楞嚴經選注》，成品形態與 `vcpp`（金剛經合注）同一類。
 > 本檔只寫「這一區的差異」；共用紀律在 agent-norms 與母工作區，**不要複製過來**。
 
 ## 0. 先讀（紀律來源，留在原處）
@@ -38,6 +38,20 @@
 | 資料管線、對齊、單檔打包 | `D:\2026\vcpp` 的 `build\`、`build-vcpp.mjs`——**先確認作者要複製過來還是抽成共用**，不要默默分叉 |
 | 操作導覽引擎 | `vcpp` 已 vendored 的 `src\tour\`（來源見 `src\tour\VENDOR.md`） |
 
+### 2.1 不要重造輪子（2026-11-05 作者明令）
+
+**閱讀器（`D:\2026\zhu-combined`）已有的功能，一律先找再用，不要自己手刻一套。**
+
+| 功能 | 既有的在哪 | 用法 |
+|---|---|---|
+| 科判層（麵包屑、目錄浮層、經文彩色 `kb-mark`、版本切換） | 閱讀器 `src\kepan\kepan.js`、`kepan.css`、`build-kepan.mjs`、`build\kepan\build.mjs`、`KEPAN.md` | 資料做成 `kepan/kepan-data.js`（`window.KEPAN`），建置改用 `build-kepan.mjs` |
+| 注疏分頁、別譯、辭典（`gp-*`）、書籤、搜尋、PWA、操作導覽 | `app.js`、`style.css`、`index.html` | 改閱讀器本體，不要在本區另寫一套 UI |
+| 三欄版面、句下展開、面板開關 | 同上 | 同上 |
+
+- 判斷順序：**vcpp 有嗎 → 閱讀器有嗎 → 才自己寫**。
+- 自己寫過的（2026-11-04 的 `#kepanBar`／`.kb-mark`／`ke-line`）已全部移除，改用 `kepan` 模組；不要再把它們加回來。
+- 遇到閱讀器行為不如預期，先讀閱讀器的 `KEPAN.md` 與 `src\kepan\kepan.js`，必要時**改閱讀器本體**（改動會同時影響金剛經，先確認不破壞）。
+
 ## 3. 工作流程
 
 ```text
@@ -60,6 +74,8 @@
 2. **發布**：只有作者明說才做；發布後一定驗線上。
 3. `/incubator/` 是共用目錄：只放本專案的檔，不動 `index.html`、`projects.json`。
    > ⚠️ `/huixintang/` 是官網工作區的目錄，2026-11-04 誤覆蓋過它的 `index.html`——不要往那裡寫。
+4. **發布規範**：進駐門檻、繁簡、背景與主題、`deploy/incubator.json`、部署與生命週期，一律照 canonical 的
+   `D:\2026\agent-norms\incubator.md`；本區不另存一份。
 
 ## 5. 文件
 
@@ -93,3 +109,10 @@
 - [ ] 要不要別譯／梵藏對照？楞嚴只有般剌蜜帝一譯傳世（另有藏譯、梵本殘卷），做法與金剛經不同。
 - [ ] 線上檔名與目錄（暫定 `surangama.html`、`/incubator/`）
 - [ ] `vcpp` 的管線是複製過來，還是抽成共用模組？
+
+---
+
+## 語義分句與軌號（canonical）
+
+指導性原則見 `D:\2026\agent-norms\shutonggui.md`（書同軌）：句級地址、最小切分、
+軌號（`track_id`）與 crosswalk。本區只放實作與資料，不另存一份原則再改。

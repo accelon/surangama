@@ -10,6 +10,9 @@ build/_*
 build/series/_*
 screenshots/
 
+# 由 scripts/ 從語料重建的資料（要進版控時再拿掉這行）
+data/
+
 # Python／暫存
 __pycache__/
 build/__pycache__/
