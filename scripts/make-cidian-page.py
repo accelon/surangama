@@ -241,6 +241,13 @@ a:hover{text-decoration:underline;text-underline-offset:3px}
 .brand-name{font-size:1.02rem;font-weight:700;letter-spacing:.16em;white-space:nowrap}
 .brand-sub{font-family:var(--sans);font-size:.7rem;color:var(--muted);letter-spacing:.12em;white-space:nowrap}
 .acts{display:flex;gap:8px;align-items:center}
+.langswitch{display:flex;align-items:center;border:1px solid var(--line);border-radius:999px;
+  overflow:hidden;background:var(--card)}
+.langbtn{min-width:44px;height:44px;border:0;background:transparent;color:var(--muted);
+  font-family:var(--sans);font-size:.9rem;line-height:1;cursor:pointer;padding:0 8px}
+.langbtn + .langbtn{border-left:1px solid var(--line)}
+.langbtn:hover{color:var(--ink);background:var(--paper2)}
+.langbtn.on{background:var(--accent);color:var(--paper);font-weight:700}
 .iconbtn{width:44px;height:44px;border:1px solid var(--line);background:var(--card);
   color:var(--muted);border-radius:50%;cursor:pointer;font-family:var(--sans);
   font-size:.9rem;line-height:1;display:inline-flex;align-items:center;justify-content:center}
@@ -349,7 +356,10 @@ topbar = (
     '<div class="brand"><span class="brand-name">楞嚴詞典</span>'
     '<span class="brand-sub">楞嚴經選注</span></div>'
     '<div class="acts">'
-    '<button class="iconbtn" id="simBtn" type="button" aria-label="切換簡體" title="顯示簡體">简</button>'
+    '<div class="langswitch" role="group" aria-label="繁簡切換">'
+    '<button class="langbtn" id="btnTrad" type="button" aria-label="繁體" title="顯示繁體">繁</button>'
+    '<button class="langbtn" id="btnSim" type="button" aria-label="簡體" title="顯示簡體">简</button>'
+    "</div>"
     '<button class="iconbtn" id="theme" type="button" aria-label="切換明暗" title="切換明暗">☾</button>'
     "</div></div></header>"
 )
@@ -368,7 +378,8 @@ JS = r"""
 (function(){
   var MAP = __SIM_JSON__;
   var PUNCT = {'「':'“','」':'”','『':'‘','』':'’'};
-  var simBtn = document.getElementById('simBtn');
+  var tradBtn = document.getElementById('btnTrad');
+  var simBtn = document.getElementById('btnSim');
   var themeBtn = document.getElementById('theme');
 
   function qs(k){ try { return new URLSearchParams(location.search).get(k); } catch(e){ return null; } }
@@ -396,7 +407,7 @@ JS = r"""
       acceptNode: function(n){
         var p = n.parentElement;
         if (!p) return NodeFilter.FILTER_REJECT;
-        if (p.closest('script,style,#simBtn,#theme,.no-sim,code')) return NodeFilter.FILTER_REJECT;
+        if (p.closest('script,style,.langswitch,#theme,.no-sim,code')) return NodeFilter.FILTER_REJECT;
         if (!n.nodeValue || !/\S/.test(n.nodeValue)) return NodeFilter.FILTER_REJECT;
         return NodeFilter.FILTER_ACCEPT;
       }
@@ -418,10 +429,12 @@ JS = r"""
       n.nodeValue = on ? conv(src) : src;
     }
     document.documentElement.lang = on ? 'zh-Hans' : 'zh-Hant';
+    if (tradBtn){
+      tradBtn.classList.toggle('on', !on);
+      tradBtn.setAttribute('aria-pressed', on ? 'false' : 'true');
+    }
     if (simBtn){
-      simBtn.textContent = on ? '繁' : '简';
-      simBtn.title = on ? '回繁體原文' : '顯示無損簡體';
-      simBtn.setAttribute('aria-label', on ? '回繁體原文' : '顯示簡體');
+      simBtn.classList.toggle('on', on);
       simBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
     }
     sim = on;
@@ -438,9 +451,13 @@ JS = r"""
   collect();
   applySim(prefSim());
 
+  if (tradBtn) tradBtn.addEventListener('click', function(){
+    applySim(false);
+    try { localStorage.setItem('cidian-sim', '0'); } catch(e){}
+  });
   if (simBtn) simBtn.addEventListener('click', function(){
-    applySim(!sim);
-    try { localStorage.setItem('cidian-sim', sim ? '1' : '0'); } catch(e){}
+    applySim(true);
+    try { localStorage.setItem('cidian-sim', '1'); } catch(e){}
   });
   if (themeBtn) themeBtn.addEventListener('click', function(){
     var dark = !document.documentElement.classList.contains('dark');
