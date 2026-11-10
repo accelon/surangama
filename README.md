@@ -31,6 +31,7 @@
 
 - 咒語 prototype：<https://shutonggui.cn/incubator/surangama-mantra.html>（孵化區「釋家」，掛在「楞嚴經選注」卡片下；鏡像 <https://nissaya.cn/incubator/surangama-mantra.html>）
 - 入口文件：[`docs/shutonggui.md`](docs/shutonggui.md)、[`docs/xref.md`](docs/xref.md)、[`docs/quote-scan.md`](docs/quote-scan.md)、[`docs/track-refinements.md`](docs/track-refinements.md)、[`docs/mantra-word-alignment.md`](docs/mantra-word-alignment.md)、[`docs/mantra-tab.md`](docs/mantra-tab.md)、[`docs/progress-2026-11-05.md`](docs/progress-2026-11-05.md)、[`docs/rut-id-skill.md`](docs/rut-id-skill.md)。
+- 專宗詞典：[`docs/zongzhuan-cidian.md`](docs/zongzhuan-cidian.md)（論述：紙書與語料、啟動成本與攤平、四個「能不能」；四張圖在 `docs/figs/zongzhuan-cidian/`，由同目錄 `make-figs.py` 產生）。網頁版：<https://shutonggui.cn/incubator/surangama-cidian.html>（掛在孵化區「楞嚴經選注」卡片下；原始檔 `build/site/surangama-cidian.html`，產生腳本 `scripts/make-cidian-page.py`）。
 - 驗證：`bun run scripts/check-track-system.ts`、`bun run scripts/check-refinements.ts`。
 
 ## 現況（2026-11-04）
