@@ -13,7 +13,10 @@ import { normWithMap } from './lib/ngram';
 
 const ROOT = join(import.meta.dir, '..');
 const DATA = join(ROOT, 'data');
-const OUT = join(DATA, 'align');
+// 重切模式：0＝不重切（基數）、1＝P0＋P1、2＝P2' 規則 B ＋保護欄。2026-11-12 定案用 2。
+const RESLICE_P = Number(process.env.RESLICE_P ?? 2);
+// RESLICE_OUT：改寫出到別的目錄（A/B 對照用，例如 RESLICE_P=0 的基數版），預設 data/align
+const OUT = process.env.RESLICE_OUT ? join(ROOT, process.env.RESLICE_OUT) : join(DATA, 'align');
 mkdirSync(OUT, { recursive: true });
 
 const N = Number(process.env.ALIGN_N ?? 8);
@@ -108,16 +111,99 @@ for (const f of files) {
   kept.reverse();
 
   // 句 → 注疏片段
+  // 【重切 P0＋P1（2026-11-12）】原本的迄點就是 8 字窗的最後一碼，實測七家 27,365 段
+  // 0% 以句末收尾，而且兩段之間的解說整塊不掛任何句子（全文只顯示 14.3%～51.3%）。
+  // 現在兩條規則（不越界到下一段＝不新增重疊，重疊的消解留給 P2）：
+  //   P0 迄點往後报到第一個句末標點（。！？；，含標點），最遠 RESLICE_SENT_CAP 字；
+  //   P1 句末落在下一段起點之後時，乾脆接到下一段起點（把 gap 的解說收進來）。
+  // 停在句中（切點＝下一段起點）與殘留縫隙都計數，作為 P2 的抽樣依據。
+  const SENT_CAP = Number(process.env.RESLICE_SENT_CAP ?? 80);
+  const FULL_CAP = Number(process.env.RESLICE_FULL_CAP ?? 900);   // 一段最多往後吃多少字
+  const P = RESLICE_P;                                          // 0＝不重切（基數）、1＝P0＋P1、2＝P2'
+  const END_CH = '。！？；';
+  const snapEnd = (pos: number, look: number) => {
+    const stop = Math.min(raw.length, pos + look);
+    for (let i = pos; i < stop; i++) if (END_CH.indexOf(raw[i]) >= 0) return i + 1;
+    return -1;
+  };
+
+  const segs: { si: number; a: number; b0: number }[] = [];
+  {
+    let si = 0;
+    for (const [wp, sp] of kept) {
+      while (si + 1 < sents.length && sentStart[si + 1] <= sp) si++;
+      if (sp < sentStart[si] || sp >= sentEnd[si]) continue;
+      segs.push({ si, a: map[wp], b0: map[Math.min(wp + N - 1, map.length - 1)] + 1 });
+    }
+  }
+
+  const tiled: { si: number; start: number; end: number; page: string; kind: string }[] = [];
+  let seamChars = 0;                       // 因收到句末而留著沒掛的縫隙（句末 → 下一段起點）
+  const GUARD = Number(process.env.RESLICE_GUARD ?? 4);
+  const kinds: Record<string, number> = {};
+
+  if (P >= 2) {
+    /* P2'（規則 B ＋保護欄）：一家注疏切成連續不重疊的塊，但絕不把任何一段的 8 字窗吃到見骨。
+       - 縫隙（a_{i+1} ≥ b0_i）：cut 取 (b0_i, a_{i+1}] 內最靠右的句末，沒有就接到 a_{i+1}——零損失。
+       - 重疊（a_{i+1} < b0_i）：在重疊區找切點，傷害＝兩側窗被吃字數的較大者；
+         同傷時優先「切點正好是句末」（前段收得乾淨）；最大傷害 > GUARD 就退回保留重疊（不硬切）。
+       - 最後一段同樣受 FULL_CAP 约束，不無界延伸到書尾。 */
+    const isEnd = (j: number) => END_CH.indexOf(raw[j - 1]) >= 0;
+    let prevEnd = 0, prevKept = false;
+    for (let i = 0; i < segs.length; i++) {
+      const s = segs[i];
+      const nx = i + 1 < segs.length ? segs[i + 1] : null;
+      // 接龍：上一段收到的位置就是本段起點（不然句末與下一錨點之間的尾巴沒人認領）。
+      // 只有上一段走「保留重疊」時，本段才回到自己原本的起點。
+      let start = i === 0 ? s.a : (prevKept ? Math.min(s.a, prevEnd) : prevEnd);
+      if (start > s.b0) start = Math.min(s.a, s.b0);          // 極端情況的保底：不越過自己窗尾
+      let end = Math.max(s.b0, start), kind = 'raw';
+      if (!nx) {                                   // 最後一段：句末收尾，但不超過 FULL_CAP
+        const e1 = snapEnd(s.b0, SENT_CAP);
+        end = Math.min(e1 > 0 ? e1 : s.b0, s.b0 + FULL_CAP, raw.length);
+        kind = e1 > 0 ? 'sent' : 'raw';
+      } else if (nx.a >= s.b0) {                   // 有縫隙
+        let cut = nx.a;
+        for (let j = Math.min(nx.a, raw.length); j > s.b0; j--) if (isEnd(j)) { cut = j; break; }
+        end = Math.max(cut, s.b0);
+        kind = cut > s.b0 ? 'sent' : 'tile';
+        seamChars += Math.max(0, nx.a - end);
+      } else {                                     // 重疊區 [a_{i+1}, b0_i]
+        const left = nx.a, right = s.b0;
+        const cands: number[] = [left, right];
+        for (let j = left; j <= right; j++) if (isEnd(j)) cands.push(j);
+        let best: { c: number, hurt: number, score: number } | null = null;
+        for (const c of cands) {
+          const hurt = Math.max(right - c, c - left);            // 兩側窗被吃的較大者
+          const score = hurt * 10 + (isEnd(c) ? 0 : 5);          // 同傷時先取句末
+          if (!best || score < best.score) best = { c, hurt, score };
+        }
+        if (best && best.hurt <= GUARD) { end = best.c; kind = best.hurt === 0 ? 'tile' : 'trim'; }
+        else { end = Math.min(snapEnd(s.b0, SENT_CAP) > 0 ? Math.min(snapEnd(s.b0, SENT_CAP), raw.length) : s.b0, s.b0 + FULL_CAP); kind = 'kept'; }
+      }
+      if (end <= start) end = Math.min(Math.max(start + 1, s.b0), raw.length);
+      tiled.push({ si: s.si, start, end, page: pageOf[start] ?? '', kind });
+      prevEnd = end; prevKept = kind === 'kept';
+    }
+    for (const t of tiled) kinds[t.kind] = (kinds[t.kind] || 0) + 1;
+  } else {
+    for (let i = 0; i < segs.length; i++) {
+      const s = segs[i];
+      const nextA = i + 1 < segs.length ? segs[i + 1].a : Math.min(raw.length, s.a + FULL_CAP);
+      const e1 = P ? snapEnd(s.b0, SENT_CAP) : -1;
+      let end = s.b0, kind = 'raw';
+      if (P && e1 > 0 && e1 <= nextA) { end = e1; kind = 'sent'; seamChars += Math.max(0, nextA - e1); }
+      else if (P && nextA > s.b0) { end = Math.min(nextA, s.a + FULL_CAP); kind = 'tile'; }
+      tiled.push({ si: s.si, start: s.a, end, page: pageOf[s.a] ?? '', kind });
+    }
+    for (const t of tiled) kinds[t.kind] = (kinds[t.kind] || 0) + 1;
+  }
+
   const perSentence = new Map<number, { start: number; end: number; page: string }[]>();
-  let si = 0;
-  for (const [wp, sp] of kept) {
-    while (si + 1 < sents.length && sentStart[si + 1] <= sp) si++;
-    if (sp < sentStart[si] || sp >= sentEnd[si]) continue;
-    const rawStart = map[wp];
-    const rawEnd = map[Math.min(wp + N - 1, map.length - 1)] + 1;
-    const list = perSentence.get(si) ?? [];
-    list.push({ start: rawStart, end: rawEnd, page: pageOf[rawStart] ?? '' });
-    perSentence.set(si, list);
+  for (const t of tiled) {
+    const list = perSentence.get(t.si) ?? [];
+    list.push({ start: t.start, end: t.end, page: t.page });
+    perSentence.set(t.si, list);
   }
 
   // 合併同一句內相鄰片段
@@ -142,13 +228,19 @@ for (const f of files) {
     sentences: [...merged].map(([s, frags]) => ({ s, frags })),
   }, null, 0) + '\n');
 
+  // 重切后的覆蓋與收尾（自己算一份，正式驗收在 scripts/check-reslice.ts）
+  let shown = 0;
+  for (const [, frags] of merged) for (const f of frags) shown += Math.max(0, f.end - f.start);
   const stat = {
     id: w.id, chars: w.chars, windows: kept.length,
     kept: kept.length, sentences: merged.size, pages: pages.size,
+    cutSent: kinds.sent || 0, cutTile: (kinds.tile || 0) + (kinds.trim || 0), cutKept: kinds.kept || 0, cutRaw: kinds.raw || 0,
+    seamChars: seamChars, shownChars: shown, shownPct: +(100 * shown / raw.length).toFixed(1),
   };
   summary.push(stat);
-  console.log(`${w.id}\t錨 ${kept.length}/${wn.length - N + 1}\t句 ${merged.size}/${sents.length}\t頁 ${pages.size}`);
+  console.log(`${w.id}\t錨 ${kept.length}/${wn.length - N + 1}\t句 ${merged.size}/${sents.length}\t頁 ${pages.size}` +
+    `\t句末 ${kinds.sent|0}／接龍 ${(kinds.tile|0)+(kinds.trim|0)}／保留重疊 ${kinds.kept|0}／原樣 ${kinds.raw|0}\t顯示 ${stat.shownPct}%（${shown.toLocaleString()} 字）`);
 }
 
-writeFileSync(join(DATA, 'align-summary.json'), JSON.stringify({ schema: 1, n: N, summary }, null, 1) + '\n');
-console.log('→ data/align/*.json、data/align-summary.json');
+writeFileSync(join(OUT, 'align-summary.json'), JSON.stringify({ schema: 1, n: N, resliceP: RESLICE_P, summary }, null, 1) + '\n');
+console.log('→ ' + (process.env.RESLICE_OUT ? process.env.RESLICE_OUT : 'data/align') + '/*.json、align-summary.json');
