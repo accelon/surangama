@@ -18,7 +18,7 @@
 | `data/sentences.tsv` | 4,890 句（draft `sid`） |
 | `data/tracks-zh.tsv` | 4,890 個漢文穩定軌號（`S0000.1` 型） |
 | `data/cuts.tsv` | 2,418 刀證據表（支持度、實錨、塌縮、層級） |
-| `data/xref-kepan.tsv`／`xref-section.tsv`／`xref-commentary.tsv`／`xref-quote.tsv` | 11,007 科判節點、27 分節、37,565 注疏句 → track range |
+| `data/xref-kepan.tsv`／`xref-section.tsv`／`xref-commentary.tsv`／`xref-quote.tsv` | 11,007 科判節點、27 分節、36,779 注疏句 → track range（2026-11-12 隨重切重跑，舊記 37,565） |
 | `data/hierarchy*.json` | 卷→27 分節→段；all／exact／shared2／coarse／all-ed／coarse-ed；推薦 `hierarchy-coarse-ed`（675 段） |
 | `data/tracks-sa.tsv`／`align.tsv` | 不空本 143 梵句；T945↔KU-PDF pilot 20 列 |
 | `data/quote-hits.tsv` | ADBengine 掃 taisho／wxzj 的引用（291 軌、5,020 hits） |
@@ -33,6 +33,28 @@
 - 入口文件：[`docs/shutonggui.md`](docs/shutonggui.md)、[`docs/xref.md`](docs/xref.md)、[`docs/quote-scan.md`](docs/quote-scan.md)、[`docs/track-refinements.md`](docs/track-refinements.md)、[`docs/mantra-word-alignment.md`](docs/mantra-word-alignment.md)、[`docs/mantra-tab.md`](docs/mantra-tab.md)、[`docs/progress-2026-11-05.md`](docs/progress-2026-11-05.md)、[`docs/rut-id-skill.md`](docs/rut-id-skill.md)。
 - 專宗詞典：[`docs/zongzhuan-cidian.md`](docs/zongzhuan-cidian.md)（論述：紙書與語料、啟動成本與攤平、四個「能不能」；四張圖在 `docs/figs/zongzhuan-cidian/`，由同目錄 `make-figs.py` 產生）。網頁版：<https://shutonggui.cn/incubator/surangama-cidian.html>（掛在孵化區「楞嚴經選注」卡片下；原始檔 `build/site/surangama-cidian.html`，產生腳本 `scripts/make-cidian-page.py`）。
 - 驗證：`bun run scripts/check-track-system.ts`、`bun run scripts/check-refinements.ts`。
+
+## 回報定位與注文斷句（2026-11-12）
+
+- **位置寫進網址**：句子、分、分頁、科判家、科文節點、閱讀模式的句子與頁碼，都反映在 hash 上，
+  標題列多一顆 **🔗**（按下去複製目前位置）。客戶回報只要貼連結就能重現那一屏，例如
+  `https://shutonggui.cn/incubator/surangama.html#u=1420&sec=5&tab=works&kb=YY&k=812`。
+  欄位定義、優先序（hash ＞ query ＞ localStorage）與相容性在閱讀器
+  [`zhu-combined/KEPAN.md`](https://github.com/accelon/zhu-combined)「位置寫進網址」一節；
+  驗收 `node zhu-combined/build/cdp-url-state.mjs <file:// 或 https:// 頁面>`（楞嚴本機＋金剛經本機＋線上楞嚴，各 30 項全過）。
+- **注疏顯示到一半就斷**：成因是 `scripts/align-works.ts` 的 8 字窗迄點（實測七家 27,365 段
+  **0% 以句末收尾**，全文被顯示的比例只有 14%～51%）。兩處一起修：
+  - 前端（閱讀器本體）：預設補到句末、「更多（還有 N 字）」展開到同家下一段之前；
+  - 資料層（本區 `RESLICE_P=2`）：規則 B ＋保護欄把一家注疏切成連續不重疊的塊，
+    聯集覆蓋 18.5% → **94.9%**、段尾句末 0% → **98.1%**、中間縫隙 298 萬字 → **0**、
+    38,241 個原窗 99.54% 完整覆蓋、放棄句子 0。
+  調查數字、取捨與 GUARD 掃描見 [`docs/reslice-report.md`](reslice-report.md) 與 [`docs/commentary-cut.md`](docs/commentary-cut.md)。
+- `data/xref-commentary.tsv` 隨之重跑：**37,565 → 36,779 列**（差額來自更早的對齊條件變動，非重切所致，
+  逐家句集合比對「失去 0、新增 0」），`docs/xref.md` 與 `check-track-system` 已同步。
+- **2026-11-12 22:06 與 23:31 兩度部署兩站**（主站＋鏡像；`*.gz`＋`*.br`＋`surangama.webmanifest` 一齊上，舊版留 `surangama.html.prev` 可回滾）。23:31 那版含科判面板效能修法、`.flash` 樣式與 hash 還原；線上驗回 ke-panel 11 項、url-state 30 項、note-more 13 項全綠
+  與先前缺的 `surangama.webmanifest`）。金剛經 `vcpp.html` 只改了本機，**尚未發布**。
+
+- **右欄「科判」分頁已取消**（2026-11-12 作者決定：buggy、用處不大）。關開關在本區 `build/to-reader.mjs` 的 `WITH_KE_PANEL = false`——閱讀器「資料有才長分頁」，所以不動共用程式，其他工作區不受影響，要恢復改回 true 即可。科判功能由上方**科文條**提供（10 家、點了跳正文）。單檔 5.24 MB → **5,085,784 bytes**。已於 2026-11-12 23:57／23:58 部署兩站。詳見 [`docs/ke-panel-perf.md`](docs/ke-panel-perf.md) §八。
 
 ## 現況（2026-11-04）
 
