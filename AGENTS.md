@@ -72,6 +72,12 @@
 1. **建置記帳**：本區 [`docs\build-log.md`](docs/build-log.md)，一列寫日期／版本或 sha／大小／buildTime／說明。
    > 不記在母區版本紀錄：母區那本記的是 adb 成品。
 2. **發布**：只有作者明說才做；發布後一定驗線上。
+   - 發布一律同時傳 `surangama.html`、`.gz`、`.br`、`surangama.webmanifest`
+     （`scripts/deploy-incubator.mjs` 已這樣做；`docs\brokli` 見 `D:\2026\agent-norms` 的 brotli 指示）。
+   - 鏡像 `nissaya.cn`（Ubuntu 20.04 + nginx 1.18）**目前不支援 brotli**，只走 `gzip_static`；
+     實測 br 比 gz 對我們的單檔只省 0.9%–1.5%，可行性與 runbook 見
+     [`docs\mirror-brotli.md`](docs/mirror-brotli.md)。要動鏡像需要 root（`yap` 的 sudo 有密碼保護），
+     本區一律只做唯讀調查，不代做伺服端變更。
 3. `/incubator/` 是共用目錄：只放本專案的檔，不動 `index.html`、`projects.json`。
    > ⚠️ `/huixintang/` 是官網工作區的目錄，2026-11-04 誤覆蓋過它的 `index.html`——不要往那裡寫。
 4. **發布規範**：進駐門檻、繁簡、背景與主題、`deploy/incubator.json`、部署與生命週期，一律照 canonical 的
